@@ -87,11 +87,26 @@ public:
     void findKNN(Node *node, const Point &queryPoint, std::size_t k, std::vector<Scalar> &a, Scalar &d, std::priority_queue<std::pair<Scalar, Point>> &knnQueue)
     {
         if (node->isLeaf)
-        {
+        {   
             for (const Point &point : node->bucket)
             {
-                Scalar distance = SquaredL2::euclideanSqr(queryPoint, point, Dimensions);
-                knnQueue.push(std::make_pair(distance, point));
+                if (knnQueue.size() == k)
+                {
+                    // Si la cola de prioridad está llena, comprueba si la distancia entre el punto de consulta y el punto actual es menor que la distancia del vecino más lejano
+                    Scalar distance = SquaredL2::euclideanSqr(queryPoint, point, Dimensions);
+                    if (distance < knnQueue.top().first)
+                    {
+                        // Si es así, elimina el vecino más lejano y añade el punto actual a la cola de prioridad
+                        knnQueue.pop();
+                        knnQueue.push(std::make_pair(distance, point));
+                    }
+                }
+                else
+                {
+                    // Si la cola de prioridad no está llena, añade el punto actual a la cola de prioridad
+                    Scalar distance = SquaredL2::euclideanSqr(queryPoint, point, Dimensions);
+                    knnQueue.push(std::make_pair(distance, point));
+                }
             }
         }
         else
@@ -103,73 +118,17 @@ public:
             Node *nearestChild = (queryPoint[node->splitDimension] < node->location[node->splitDimension]) ? node->leftChild : node->rightChild;
             Node *farthestChild = (nearestChild == node->leftChild) ? node->rightChild : node->leftChild;
 
-            findKNN(nearestChild, queryPoint, k, a, d, knnQueue); 
+            findKNN(nearestChild, queryPoint, k, a, d, knnQueue);
 
             Scalar sqrDistanceU = SquaredL2::euclideanSqr(queryPoint, node->location, node->splitDimension);
-            d = d - a[node->splitDimension] + sqrDistanceU; 
+            d = d - a[node->splitDimension] + sqrDistanceU;
             a[node->splitDimension] = sqrDistanceU;
 
-            if (d < knnQueue.top().first)
+            if (d < knnQueue.top().first || knnQueue.size() < k)
             {
                 findKNN(farthestChild, queryPoint, k, a, d, knnQueue);
             }
         }
-    }
-
-    std::vector<Point>
-    findKNearestNeighborsWithBacktracking(const Point &queryPoint, std::size_t k)
-    {
-        std::vector<Point> primaryPath; // Almacena el camino primario
-        Node *currentNode = nodes[0];   // Comenzar desde la raíz
-
-        // Encontrar el camino primario y detenerse cuando lleguemos a la hoja que contiene el punto de consulta
-        while (!currentNode->isLeaf)
-        {
-            primaryPath.push_back(currentNode->location);
-            if (queryPoint[currentNode->splitDimension] < currentNode->location[currentNode->splitDimension])
-            {
-                currentNode = currentNode->leftChild;
-            }
-            else
-            {
-                currentNode = currentNode->rightChild;
-            }
-        }
-
-        primaryPath.push_back(currentNode->location); // Agregar la hoja que contiene el punto de consulta
-
-        std::priority_queue<std::pair<Scalar, Point>> knnQueue;
-
-        // Realizar el algoritmo 1 (FindKNN) en la hoja que contiene el punto de consulta
-        findKNN(currentNode, queryPoint, k, knnQueue);
-
-        // Realizar el backtracking desde el camino primario
-        for (int i = primaryPath.size() - 2; i >= 0; i--)
-        {
-            Node *node = nodes[i];
-            Scalar axisDistance = std::abs(queryPoint[node->splitDimension] - node->location[node->splitDimension]);
-            Scalar maxDistance = knnQueue.top().first;
-
-            if (axisDistance < maxDistance)
-            {
-                // Si la distancia en la dimensión actual es menor que la máxima distancia actual, buscar en el otro hijo
-                Node *otherChild = (queryPoint[node->splitDimension] < node->location[node->splitDimension]) ? node->rightChild : node->leftChild;
-                findKNN(otherChild, queryPoint, k, knnQueue);
-            }
-        }
-
-        // Extraer los k vecinos más cercanos de la cola de prioridad
-        std::vector<Point> kNearestNeighbors;
-        while (!knnQueue.empty())
-        {
-            kNearestNeighbors.push_back(knnQueue.top().second);
-            knnQueue.pop();
-        }
-
-        // Los vecinos más cercanos se almacenan en orden inverso en la cola de prioridad, así que los invertimos aquí
-        std::reverse(kNearestNeighbors.begin(), kNearestNeighbors.end());
-
-        return kNearestNeighbors;
     }
 
     // Getters & setters
@@ -224,8 +183,10 @@ private:
         std::vector<Point> bucket;
         bool isLeaf;
 
-        Node(Point &location, std::size_t &splitDimension) : location(location), splitDimension(splitDimension), leftChild(nullptr), rightChild(nullptr), isLeaf(false) { bucket = {}; }
-        Node(std::vector<Point> &locations, std::size_t &splitDimension) : location(Point()), splitDimension(splitDimension), leftChild(nullptr), rightChild(nullptr), bucket(locations), isLeaf(true) {}
+        Node(Point &location, std::size_t &splitDimension) : 
+            location(location), splitDimension(splitDimension), leftChild(nullptr), rightChild(nullptr), isLeaf(false) { bucket = {}; }
+        Node(std::vector<Point> &locations, std::size_t &splitDimension) : 
+            location(Point()), splitDimension(splitDimension), leftChild(nullptr), rightChild(nullptr), bucket(locations), isLeaf(true) {}
     };
 };
 
@@ -233,9 +194,14 @@ int main()
 {
     std::vector<std::vector<double>> points =
         {
-            {2, 4}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}, {1, 1}, {3, 3}, {6, 6}, {7, 8}, {2, 9}, {5, 2}, {8, 5}, {3, 7}, {4, 4}, {9, 3}, {1, 9}, {7, 7}, {5, 8}, {2, 7}, {4, 2}, {6, 4}, {9, 1}, {8, 9}, {2, 2}};
+            {2, 4}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}, {1, 1}, {3, 3}, {6, 6},
+            {7, 8}, {2, 9}, {5, 2}, {8, 5}, {3, 7}, {4, 4}, {9, 3}, {1, 9}, {7, 7}, 
+            {5, 8}, {2, 7}, {4, 2}, {6, 4}, {9, 1}, {8, 9}, {2, 2}, {3, 6}, {5, 3},
+            {4, 3}, {5, 8}, {1, 6}, {3, 1}, {6, 2}, {8, 3}, {2, 5}, {4, 9}, {7, 5},
+            {1, 2}, {5, 6}, {9, 8}, {4, 1}, {7, 3}, {2, 8}, {6, 7},
+            {8, 4}, {3, 8}, {1, 4}, {5, 7}, {9, 2}, {4, 6}, {6, 3}} ;
 
-    std::vector<double> queryPoint = {2, 3};
+    std::vector<double> queryPoint = {4, 7};
 
     KDTree<double, 2> tree;
 
@@ -245,21 +211,12 @@ int main()
     std::size_t k = 10; // Número de vecinos más cercanos a buscar
     std::vector<std::vector<double>> result1 = tree.findKNearestNeighbors(queryPoint, k);
 
-    // Realizar una búsqueda KNN utilizando el algoritmo 2 (con backtracking)
-    // std::vector<std::vector<double>> result2 = tree.findKNearestNeighborsWithBacktracking(queryPoint, k);
-
     // Imprimir los resultados
     std::cout << "Resultados de la busqueda KNN (Algoritmo 1):\n";
     for (const auto &point : result1)
     {
         std::cout << "(" << point[0] << ", " << point[1] << ")\n";
     }
-
-    /*  std::cout << "\nResultados de la búsqueda KNN (Algoritmo 2 - Backtracking):\n";
-      for (const auto &point : result2)
-      {
-          std::cout << "(" << point[0] << ", " << point[1] << ")\n";
-      }*/
 
     return 0;
 }
