@@ -51,7 +51,7 @@ private:
 public:
     using Point = std::vector<Scalar>;
 
-    KDTree() { bucketSize = 2 * (Dimensions); }
+    KDTree() { bucketSize = 2 * (Dimensions);}
 
     void startKDTree(std::vector<Point> &points, std::size_t dimension)
     {
@@ -87,7 +87,7 @@ public:
     void findKNN(Node *node, const Point &queryPoint, std::size_t k, std::vector<Scalar> &a, Scalar &d, std::priority_queue<std::pair<Scalar, Point>> &knnQueue)
     {
         if (node->isLeaf)
-        {   
+        {
             for (const Point &point : node->bucket)
             {
                 if (knnQueue.size() == k)
@@ -183,10 +183,8 @@ private:
         std::vector<Point> bucket;
         bool isLeaf;
 
-        Node(Point &location, std::size_t &splitDimension) : 
-            location(location), splitDimension(splitDimension), leftChild(nullptr), rightChild(nullptr), isLeaf(false) { bucket = {}; }
-        Node(std::vector<Point> &locations, std::size_t &splitDimension) : 
-            location(Point()), splitDimension(splitDimension), leftChild(nullptr), rightChild(nullptr), bucket(locations), isLeaf(true) {}
+        Node(Point &location, std::size_t &splitDimension) : location(location), splitDimension(splitDimension), leftChild(nullptr), rightChild(nullptr), isLeaf(false) { bucket = {}; }
+        Node(std::vector<Point> &locations, std::size_t &splitDimension) : location(Point()), splitDimension(splitDimension), leftChild(nullptr), rightChild(nullptr), bucket(locations), isLeaf(true) {}
     };
 };
 
@@ -194,12 +192,13 @@ int main()
 {
     std::vector<std::vector<double>> points =
         {
-            {2, 4}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}, {1, 1}, {3, 3}, {6, 6},
-            {7, 8}, {2, 9}, {5, 2}, {8, 5}, {3, 7}, {4, 4}, {9, 3}, {1, 9}, {7, 7}, 
-            {5, 8}, {2, 7}, {4, 2}, {6, 4}, {9, 1}, {8, 9}, {2, 2}, {3, 6}, {5, 3},
-            {4, 3}, {5, 8}, {1, 6}, {3, 1}, {6, 2}, {8, 3}, {2, 5}, {4, 9}, {7, 5},
-            {1, 2}, {5, 6}, {9, 8}, {4, 1}, {7, 3}, {2, 8}, {6, 7},
-            {8, 4}, {3, 8}, {1, 4}, {5, 7}, {9, 2}, {4, 6}, {6, 3}} ;
+            {2, 4}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}, {1, 1},
+            {3, 3}, {6, 6}, {7, 8}, {2, 9}, {5, 2}, {8, 5}, {3, 7}, {4, 4},
+            {9, 3}, {1, 9}, {7, 7}, {5, 8}, {2, 7}, {4, 2}, {6, 4}, {9, 1},
+            {8, 9}, {2, 2}, {3, 6}, {5, 3}, {4, 3}, {5, 8}, {1, 6}, {3, 1},
+            {6, 2}, {8, 3}, {2, 5}, {4, 9}, {7, 5}, {1, 2}, {5, 6}, {9, 8},
+            {4, 1}, {7, 3}, {2, 8}, {6, 7}, {8, 4}, {3, 8}, {1, 4}, {5, 7},
+            {9, 2}, {4, 6}, {6, 3}};
 
     std::vector<double> queryPoint = {4, 7};
 
@@ -208,7 +207,7 @@ int main()
     tree.startKDTree(points, 0);
 
     // Realizar una búsqueda KNN utilizando el algoritmo 1
-    std::size_t k = 10; // Número de vecinos más cercanos a buscar
+    std::size_t k = 12; // Número de vecinos más cercanos a buscar
     std::vector<std::vector<double>> result1 = tree.findKNearestNeighbors(queryPoint, k);
 
     // Imprimir los resultados
