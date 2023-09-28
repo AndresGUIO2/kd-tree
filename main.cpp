@@ -45,18 +45,34 @@ class KDTree
 {
 private:
     struct Node;
-    std::vector<Node *> nodes; // Store pointers to nodes
+    std::vector<Node *> nodes;
     std::size_t bucketSize;
 
 public:
     using Point = std::vector<Scalar>;
 
-    KDTree() { bucketSize = 2 * (Dimensions);}
+    KDTree()
+    {
+        bucketSize = nextPowerOf2(2 * (Dimensions));
+        std::cout << "bucketSize: " << bucketSize << std::endl;
+    };
 
     void startKDTree(std::vector<Point> &points, std::size_t dimension)
     {
         nodes.reserve(points.size());
+
         buildKDTree(points, 0);
+    }
+
+    void startAdaptiveKDTree(std::vector<Point> &Points, std::size_t dimension)
+    {
+        nodes.reserve(Points.size());
+
+        Scalar splitDimension = selectSplitDimension(Points);
+
+        std::cout << "Dimension de division: " << splitDimension << std::endl;
+
+        buildAdaptiveKDTree(Points, splitDimension);
     }
 
     std::vector<Point> findKNearestNeighbors(const Point &queryPoint, std::size_t k)
@@ -111,6 +127,7 @@ public:
         }
         else
         {
+
             // Calcular la distancia entre el punto de consulta y el nodo actual
             Scalar distance = SquaredL2::euclideanSqr(queryPoint, node->location, Dimensions);
 
@@ -128,14 +145,62 @@ public:
             {
                 findKNN(farthestChild, queryPoint, k, a, d, knnQueue);
             }
+
+            if (distance < knnQueue.top().first)
+            {
+                // elimina el vecino más lejano y añade el punto actual a la cola de prioridad
+                knnQueue.pop();
+                knnQueue.push(std::make_pair(distance, node->location));
+            }
         }
+    }
+
+    std::size_t nextPowerOf2(std::size_t n)
+    {
+        /*if (n && !(n & (n - 1)))
+        {
+            return n;
+        }*/
+
+        std::size_t count = 0;
+
+        std::size_t original_n = n;
+
+        while (n != 0)
+        {
+            n >>= 1;
+            count += 1;
+        }
+
+        std::size_t result = 1 << count - 1;
+
+        if (result < original_n)
+        {
+            return result << 1;
+        }
+        else
+        {
+            return result;
+        }
+    }
+
+    int main()
+    {
+        std::cout << nextPowerOf2(1) << std::endl;  // Output: 1
+        std::cout << nextPowerOf2(2) << std::endl;  // Output: 2
+        std::cout << nextPowerOf2(3) << std::endl;  // Output: 4
+        std::cout << nextPowerOf2(16) << std::endl; // Output: 16
+        std::cout << nextPowerOf2(17) << std::endl; // Output: 32
+        return 0;
     }
 
     // Getters & setters
 
-    Scalar getBucketSize() const { return bucketSize; }
+    Scalar getBucketSize() const { return bucketSize; };
 
-    void setBucketSize(std::size_t bucketSize) { this->bucketSize = bucketSize; }
+    void setBucketSize(std::size_t bucketSize) { this->bucketSize = bucketSize; };
+
+    void setDimensions(std::size_t dimensions) { this->dimensions = dimensions; };
 
     ~KDTree()
     {
@@ -152,19 +217,23 @@ private:
         {
             // Si encontramos un nodo hoja, guárdalo en el vector de nodos y usa max size_t para la dimensión de división
             std::size_t dim = std::numeric_limits<std::size_t>::max();
+            std::cout << "Nodo hoja creado"
+                      << "\n";
             return new Node(points, dim);
         }
 
-        std::size_t lenDivided = points.size() / 2;
+        std::size_t medianIndex = points.size() / 2;
 
-        // Ordenar puntos por la dimensión actual
+        //Ordenar puntos por la dimensión actual (introsort)
         std::sort(points.begin(), points.end(), [dimension](const Point &a, const Point &b)
-                  { return a[dimension] < b[dimension]; });
+                { return a[dimension] < b[dimension]; });
 
-        Node *medianNode = new Node(points[lenDivided], dimension);
+        Node *medianNode = new Node(points[medianIndex], dimension);
 
-        std::vector<Point> leftPoints(points.begin(), points.begin() + lenDivided);
-        std::vector<Point> rightPoints(points.begin() + lenDivided, points.end());
+        std::cout << "Nodo raiz o interno: " << medianNode->location[0] << ", " << medianNode->location[1] << std::endl;
+
+        std::vector<Point> leftPoints(points.begin(), points.begin() + medianIndex);
+        std::vector<Point> rightPoints(points.begin() + medianIndex + 1, points.end());
 
         nodes.push_back(medianNode);
 
@@ -172,6 +241,69 @@ private:
         medianNode->rightChild = buildKDTree(rightPoints, (dimension + 1) % Dimensions);
 
         return medianNode;
+    }
+
+    Node *buildAdaptiveKDTree(std::vector<Point> &points, std::size_t dimension)
+    {
+
+        if (points.size() <= bucketSize)
+        {
+            std::size_t dim = std::numeric_limits<std::size_t>::max();
+            std::cout << "Nodo hoja creado"
+                      << "\n";
+            return new Node(points, dim);
+        }
+    }
+
+    int selectSplitDimension(const std::vector<Point> &points)
+    {
+
+        std::vector<Scalar> dispersion(Dimensions, 0.0);
+        std::vector<Scalar> mean(Dimensions, 0.0);
+        std::size_t n = points.size();
+
+        // Calcular la suma de las coordenadas de cada dimensión
+        for (const Point &point : points)
+        {
+            for (int dimension = 0; dimension < Dimensions; ++dimension)
+            {
+                mean[dimension] += point[dimension];
+            }
+        }
+        // Calcular la media de las coordenadas de cada dimensión
+        for (int dimension = 0; dimension < Dimensions; ++dimension)
+        {
+            mean[dimension] /= n;
+        }
+
+        // Calcular la "dispersión" (suma de diferencias absolutas) para cada dimensión
+        for (const Point &point : points)
+        {
+            for (int dimension = 0; dimension < Dimensions; ++dimension)
+            {
+                dispersion[dimension] += (point[dimension] > mean[dimension] ? point[dimension] - mean[dimension] : mean[dimension] - point[dimension]);
+            }
+        }
+        for (int dimension = 0; dimension < Dimensions; ++dimension)
+        {
+            dispersion[dimension] /= n;
+        }
+
+        // Encontrar la dimensión con la mayor dispersión
+        int splitDimension = 0;
+        Scalar maxDispersion = -std::numeric_limits<Scalar>::max();
+        for (int dimension = 0; dimension < Dimensions; ++dimension)
+        {
+            if (dispersion[dimension] > maxDispersion)
+            {
+                maxDispersion = dispersion[dimension];
+                splitDimension = dimension;
+            }
+        }
+
+        std::cout << "Se ha seleccionado " << splitDimension << std::endl;
+
+        return splitDimension;
     }
 
     struct Node
@@ -192,22 +324,16 @@ int main()
 {
     std::vector<std::vector<double>> points =
         {
-            {2, 4}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}, {1, 1},
-            {3, 3}, {6, 6}, {7, 8}, {2, 9}, {5, 2}, {8, 5}, {3, 7}, {4, 4},
-            {9, 3}, {1, 9}, {7, 7}, {5, 8}, {2, 7}, {4, 2}, {6, 4}, {9, 1},
-            {8, 9}, {2, 2}, {3, 6}, {5, 3}, {4, 3}, {5, 8}, {1, 6}, {3, 1},
-            {6, 2}, {8, 3}, {2, 5}, {4, 9}, {7, 5}, {1, 2}, {5, 6}, {9, 8},
-            {4, 1}, {7, 3}, {2, 8}, {6, 7}, {8, 4}, {3, 8}, {1, 4}, {5, 7},
-            {9, 2}, {4, 6}, {6, 3}};
+            {2, 4}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}, {1, 1}, {8, 5}, {3, 7}, {4, 4}, {9, 3}, {1, 9}, {7, 7}, {5, 8}, {5, 7}};
 
-    std::vector<double> queryPoint = {4, 7};
+    std::vector<double> queryPoint = {5, 4};
 
     KDTree<double, 2> tree;
 
     tree.startKDTree(points, 0);
 
     // Realizar una búsqueda KNN utilizando el algoritmo 1
-    std::size_t k = 12; // Número de vecinos más cercanos a buscar
+    std::size_t k = 5; // Número de vecinos más cercanos a buscar
     std::vector<std::vector<double>> result1 = tree.findKNearestNeighbors(queryPoint, k);
 
     // Imprimir los resultados
