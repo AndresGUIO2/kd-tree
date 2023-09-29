@@ -184,16 +184,6 @@ public:
         }
     }
 
-    int main()
-    {
-        std::cout << nextPowerOf2(1) << std::endl;  // Output: 1
-        std::cout << nextPowerOf2(2) << std::endl;  // Output: 2
-        std::cout << nextPowerOf2(3) << std::endl;  // Output: 4
-        std::cout << nextPowerOf2(16) << std::endl; // Output: 16
-        std::cout << nextPowerOf2(17) << std::endl; // Output: 32
-        return 0;
-    }
-
     // Getters & setters
 
     Scalar getBucketSize() const { return bucketSize; };
