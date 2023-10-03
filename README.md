@@ -2,6 +2,8 @@
 
 Este proyecto tiene como objetivo principal proporcionar una implementación eficiente de los árboles k-dimensionales, una estructura de datos crucial en la búsqueda de vecinos más cercanos y el procesamiento de datos multidimensionales. Estos árboles son esenciales en campos como la minería de datos, el aprendizaje automático, la visión por computadora y la optimización de consultas espaciales en bases de datos, acelerando operaciones que involucran datos en espacios multidimensionales.
 
+![KD Tree](https://github.com/AndresGUIO2/kd-tree/assets/110438161/fb724973-bfe8-4bb7-9067-9ae4cda12344)
+
 ## Tabla de contenidos
 
 - [Introducción](#introducción)
@@ -14,15 +16,9 @@ Los KD Trees, o árboles k-dimensionales, son estructuras de datos utilizadas en
 
 ## Características
 
-Enumera las características clave de tu implementación de KD Trees en C++. Esto puede incluir:
-
-- Eficiente búsqueda de vecinos más cercanos.
-- Insertar y eliminar nodos de forma eficiente.
-- Documentación clara y ejemplos de uso.
-
+- Permite la construcción de árboles KD Adaptativos y de árboles KD no Adaptativos
+- Se implementaron buckets en el código para mejorar la consulta en múltiples dimensiones
+  
 ## Requisitos
 
-Enumera los requisitos previos para compilar y ejecutar tu proyecto. Esto podría incluir:
-
-- C++ 11 o superior.
-- Dependencias específicas si las hay.
+- C++ 11
