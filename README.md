@@ -2,8 +2,7 @@
 
 Este proyecto tiene como objetivo principal proporcionar una implementación eficiente de los árboles k-dimensionales, una estructura de datos crucial en la búsqueda de vecinos más cercanos y el procesamiento de datos multidimensionales. Estos árboles son esenciales en campos como la minería de datos, el aprendizaje automático, la visión por computadora y la optimización de consultas espaciales en bases de datos, acelerando operaciones que involucran datos en espacios multidimensionales.
 
-![KD Tree](https://github.com/AndresGUIO2/kd-tree/assets/110438161/fdeb9b75-4589-4847-ab13-40b74587a678)
-
+![KD Tree](https://github.com/AndresGUIO2/kd-tree/assets/110438161/811a4b5c-9119-453b-a8a4-6bce7f0b7b9e)
 
 ## Tabla de contenidos
 
