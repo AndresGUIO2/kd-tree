@@ -55,7 +55,6 @@ public:
     KDTree()
     {
         bucketSize = nextPowerOf2(2 * (Dimensions));
-        bucketSize = 2;
     };
 
     void startKDTree(std::vector<Point> &points, std::size_t dimension)
@@ -234,7 +233,6 @@ private:
         }
 
         std::size_t dimension = selectSplitDimension(points);
-        std::cout << "Dimension: " << dimension << std::endl;
 
         std::size_t medianIndex = points.size() / 2;
 
@@ -318,11 +316,14 @@ private:
 
 int main()
 {
-    const int numVectores = 2000000;
+    const int numVectores = 20000;
     const int dimension = 4;
 
     // Crear un vector de vectores para almacenar los vectores de 4 dimensiones
     std::vector<std::vector<int>> vectores;
+
+    // Semilla aleatoria
+    //srand(static_cast<unsigned int>(time(nullptr)));
 
     // Generar 20000 vectores de 4 dimensiones con valores aleatorios
     for (int i = 0; i < numVectores; ++i)
@@ -331,7 +332,7 @@ int main()
         for (int j = 0; j < dimension; ++j)
         {
             // Generar números aleatorios entre 1 y 100 para cada dimensión
-            int valor = rand() % 1000000 + 1;
+            int valor = rand() % 2000000 + 1;
             vector4D.push_back(valor);
         }
         vectores.push_back(vector4D);
@@ -339,15 +340,20 @@ int main()
 
     KDTree<int, dimension> kdTree;
 
+    auto start = std::chrono::high_resolution_clock::now();
+    //kdTree.startKDTree(vectores, dimension);
     kdTree.startKDTree(vectores);
+    auto end = std::chrono::high_resolution_clock::now();
 
-    std::vector<int> queryPoint = {58775, 205331, 31236, 47351};
+    std::cout << "Tiempo de construccion: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms" << std::endl;
+
+    std::vector<int> queryPoint = {587775, 205331, 301136, 4751};
 
     std::vector<std::vector<int>> kNearestNeighbors = kdTree.findKNearestNeighbors(queryPoint, 5);
 
     //mostrar los k vecinos
 
-    auto start = std::chrono::high_resolution_clock::now();
+    start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < kNearestNeighbors.size(); ++i)
     {
         std::cout << "Vecino " << i + 1 << ": ";
@@ -357,10 +363,41 @@ int main()
         }
         std::cout << std::endl;
     }
-    auto end = std::chrono::high_resolution_clock::now();
+    end = std::chrono::high_resolution_clock::now();
 
-    std::cout << "Tiempo de ejecución: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << " microsegundos" << std::endl;
+    std::cout << "Tiempo de busqueda: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << " microsegundos" << std::endl;
 
+/*
+    //Adaptativo
+
+    std::cout<< "---------------------------------"<< std::endl;
+    std::cout<< "Adaptativo" << std::endl;
+
+    KDTree<int, dimension> kdTree2;
+
+    auto start2 = std::chrono::high_resolution_clock::now();
+    kdTree2.startKDTree(vectores);
+    auto end2 = std::chrono::high_resolution_clock::now();
+
+    std::cout << "Tiempo de construccion: " << std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count() << " ms" << std::endl;
+    
+    std::vector<std::vector <int>> kNearestNeighbors2 = kdTree2.findKNearestNeighbors(queryPoint, 5);
+
+    //mostrar los k vecinos
+    start2 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < kNearestNeighbors2.size(); ++i)
+    {
+        std::cout << "Vecino " << i + 1 << ": ";
+        for (int j = 0; j < dimension; ++j)
+        {
+            std::cout << kNearestNeighbors2[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    end2 = std::chrono::high_resolution_clock::now();
+
+    std::cout << "Tiempo de busqueda: " << std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2).count() << " microsegundos" << std::endl;
+*/
 
     return 0;
 }
